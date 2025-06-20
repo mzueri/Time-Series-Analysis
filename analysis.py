@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import numpy as np
 
+
 series=pd.read_csv("data/monthly_sales.csv")
 #series["Month"]='190' + series['Month'] # data cleaning
 series["t"]=list(range(1,len(series)+1))
@@ -14,8 +15,21 @@ plt.show()
 
 # The dataset shows an increasing trend.
 
-# TODO: plot correlogram
 
+
+
+# =============================================================================
+# Plot the Autocorrelation Function (ACF)
+# =============================================================================
+
+pd.plotting.autocorrelation_plot(series=series["Sales"])
+plt.title('Autocorrelation Plot of the Sales')
+plt.xlabel('Lag (k)')
+plt.ylabel('Autocorrelation Coefficient')
+plt.show()
+
+# The horizontal lines in the plot correspond to 95% and 99% confidence bands.
+# The dashed line is 99% confidence band.
 
 
 
@@ -76,13 +90,17 @@ model = LinearRegression()
 model.fit(X, y)
 
 y_predictions = model.predict(X)
-plt.plot(y)
+series.plot(x="t",y="Sales")
+plt.grid(True)
 plt.plot(y_predictions)
 plt.title("Predictions to original time series")
 plt.show()
 
 y_detrended = detrend(y,y_predictions)
-plt.plot(y_detrended)
+detrended_series=series.copy()
+detrended_series["y_detrended"]=y_detrended
+detrended_series.plot(x="t",y="y_detrended")
+plt.grid(True)
 plt.title("Detrended time series (subtracting predictions)")
 plt.show()
 # There may be a parabola in the residuals, suggesting that perhaps a polynomial fit may have done a better job.
