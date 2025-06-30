@@ -8,9 +8,10 @@ series=pd.read_csv("data/monthly_sales.csv")
 #series["Month"]='190' + series['Month'] # data cleaning
 series["t"]=list(range(1,len(series)+1))
 print(series.head())
-series.plot(x="t",y="Sales")
+plt.plot(series["t"],series["Sales"],label="Original Time Series",color="black")
 plt.grid(True)
 plt.title("Original time series")
+plt.legend()
 plt.show()
 
 # The dataset shows an increasing trend.
@@ -31,14 +32,21 @@ plt.show()
 # The horizontal lines in the plot correspond to 95% and 99% confidence bands.
 # The dashed line is 99% confidence band.
 
+# If we compute the sample autocorrelations up to lag 40 and find that more than two or three values fall out
+# side the bounds of the 95% confidence interval, or that one value falls far outside the bounds, we therefore reject
+# the null hypothesis.
 
 
+
+
+# TODO 
+# Partial Autocorrelation Function (PACF)
 
 
 
 
 # =============================================================================
-# Detrend by Differencing ----
+# Detrend by Differencing 
 # =============================================================================
 
 def get_diff_series(series):
@@ -47,22 +55,23 @@ def get_diff_series(series):
     delta_X = list()
     for i in range(len(X)-1):
         delta_X.append(X[i+1] - X[i])
+    delta_X.append(np.nan)
     
-    return pd.DataFrame({"t":series["t"].tolist()[:-1],"Sales":delta_X})
+    return pd.DataFrame({"t":series["t"].tolist(),"Sales":delta_X})
 
 diff1_series=get_diff_series(series)
-print(diff1_series.head())
-diff1_series.plot(x="t",y="Sales")
+plt.plot(series["t"], series["Sales"], label="Original Time Series", color="black")
+plt.plot(diff1_series["t"], diff1_series["Sales"], label="Differenced (1x)", color='blue')
+diff2_series=get_diff_series(diff1_series)
+plt.plot(diff2_series["t"], diff2_series["Sales"], label="Differenced (2x)", color='red')
 plt.grid(True)
-plt.title("Differenced (1x) time series")
+plt.legend()
+plt.title("Differenced time series (1x and 2x) vs original time series")
 plt.show()
 
-diff2_series=get_diff_series(diff1_series)
+print(diff1_series.head())
 print(diff2_series.head())
-diff2_series.plot(x="t",y="Sales")
-plt.grid(True)
-plt.title("Differenced (2x) time series")
-plt.show()
+
 
 
 
@@ -90,18 +99,15 @@ model = LinearRegression()
 model.fit(X, y)
 
 y_predictions = model.predict(X)
-series.plot(x="t",y="Sales")
-plt.grid(True)
-plt.plot(y_predictions)
-plt.title("Predictions to original time series")
-plt.show()
-
+plt.plot(series["t"],series["Sales"],label="Original Time Series",color="black")
+plt.plot(y_predictions,label="Predictions",color="orange")
 y_detrended = detrend(y,y_predictions)
 detrended_series=series.copy()
 detrended_series["y_detrended"]=y_detrended
-detrended_series.plot(x="t",y="y_detrended")
+plt.plot(detrended_series["t"],detrended_series["y_detrended"],label="Detrended Time Series",color="green")
 plt.grid(True)
-plt.title("Detrended time series (subtracting predictions)")
+plt.legend()
+plt.title("Detrending (by subtracting predictions from original time series)")
 plt.show()
 # There may be a parabola in the residuals, suggesting that perhaps a polynomial fit may have done a better job.
 
@@ -111,10 +117,22 @@ plt.show()
 
 # TODO
 # =============================================================================
-# Detrend by smoothing.
+# Detrend by Filtering/Smoothing (moving average)
 # =============================================================================
 
-# ...
+window_size = 3
+# Note: .rolling(center=True) calculates the average for the window centered on the current point.
+# This means the first (window_size // 2) and last (window_size // 2) points will have NaN for the trend
+# because there aren't enough values to center the window.
+y_smoothed_series = series['Sales'].rolling(window=window_size, center=True).mean()
+y_detrended_series=series["Sales"]-y_smoothed_series
+plt.plot(series["t"],series["Sales"],label="Original Time Series",color="black")
+plt.plot(series["t"],y_smoothed_series,label="Smoothed Time Series",color="green")
+plt.plot(series["t"],y_detrended_series,label="Detrended Time Series",color="blue")
+plt.grid(True)
+plt.legend()
+plt.title("Detrending (by subtracting smoothed time series (moving average))")
+plt.show()
 
 
 
@@ -122,6 +140,5 @@ plt.show()
 # TODO
 # Augmented Dickey-Fuller test to test stationarity of a process
 
-# TODO 
-# Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF)
+
 
